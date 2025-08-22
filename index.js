@@ -26,13 +26,11 @@ app.get("/auth/fb/login", (req, res) => {
   const u = new URL("https://www.facebook.com/v21.0/dialog/oauth");
   u.searchParams.set("client_id", process.env.FB_APP_ID);
   u.searchParams.set("redirect_uri", process.env.FB_REDIRECT);
-  u.searchParams.set(
-    "scope",
-    "whatsapp_business_management,whatsapp_business_messaging,business_management"
-  );
+  u.searchParams.set("scope", "whatsapp_business_management,whatsapp_business_messaging,business_management");
   u.searchParams.set("state", "abc123");
   res.redirect(u.toString());
 });
+
 
 // --- token exchange route ---
 app.get("/auth/fb/token", async (req, res) => {
