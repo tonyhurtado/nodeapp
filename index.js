@@ -3,6 +3,10 @@ import axios from "axios";
 
 const app = express();
 
+// Debug: check if env vars are loaded
+console.log("FB_APP_ID:", process.env.FB_APP_ID);
+console.log("FB_REDIRECT:", process.env.FB_REDIRECT);
+
 /* ---- debug logger (see paths in logs) ---- */
 app.use((req, _res, next) => {
   console.log("REQ", req.method, req.path);
