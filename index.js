@@ -3,16 +3,16 @@ import axios from "axios";
 
 const app = express();
 
-/* ------------ debug logger ------------ */
+/* ---- debug logger (see paths in logs) ---- */
 app.use((req, _res, next) => {
   console.log("REQ", req.method, req.path);
   next();
 });
 
-/* ------------ sanity route ------------ */
-app.get("/", (_req, res) => res.send("OK v3"));
+/* ---- sanity check ---- */
+app.get("/", (_req, res) => res.send("OK v4"));
 
-/* ------------ webhook verify/receive --- */
+/* ---- webhook verify/receive ---- */
 app.get("/webhook", (req, res) => {
   res.send(req.query["hub.challenge"] || "OK");
 });
@@ -21,12 +21,12 @@ app.post("/webhook", express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-/* ------------ OAuth callback ----------- */
+/* ---- OAuth callback (shows code) ---- */
 app.get("/auth/fb/callback", (req, res) => {
   res.send("Callback OK ✔ " + JSON.stringify(req.query));
 });
 
-/* ------------ FB login (redirect) ------ */
+/* ---- FB login (redirect to Facebook) ---- */
 app.get("/auth/fb/login", (req, res) => {
   const u = new URL("https://www.facebook.com/v21.0/dialog/oauth");
   u.searchParams.set("client_id", process.env.FB_APP_ID);
@@ -39,7 +39,7 @@ app.get("/auth/fb/login", (req, res) => {
   res.redirect(u.toString());
 });
 
-/* ------------ token exchange ----------- */
+/* ---- exchange code -> long-lived token ---- */
 app.get("/auth/fb/token", async (req, res) => {
   try {
     const { code } = req.query;
@@ -72,9 +72,10 @@ app.get("/auth/fb/token", async (req, res) => {
   }
 });
 
-/* ------------ auth catch-all (debug) ---- */
+/* ---- auth debug helpers ---- */
+app.get("/auth/ping", (_req, res) => res.send("AUTH PING"));
 app.get("/auth/*", (req, res) => res.send("AUTH CATCH " + req.path));
 
-/* ------------ start server -------------- */
+/* ---- start server ---- */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => console.log("Listening on " + PORT));
