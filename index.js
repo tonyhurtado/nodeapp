@@ -14,7 +14,7 @@ app.use((req, _res, next) => {
 });
 
 /* ---- sanity check ---- */
-app.get("/", (_req,res)=>res.send("OK v7"));
+app.get("/", (_req,res)=>res.send("OK v8"));
 
 /* ---- webhook verify/receive ---- */
 app.get("/webhook", (req, res) => {
