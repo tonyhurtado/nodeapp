@@ -27,8 +27,13 @@ app.post("/webhook", express.json(), (req, res) => {
 
 /* ---- OAuth callback (shows code) ---- */
 app.get("/auth/fb/callback", (req, res) => {
-  res.send("Callback OK ✔ " + JSON.stringify(req.query));
+  console.log("FB CALLBACK:", req.query);  // should log { code, state }
+  const { code } = req.query;
+  if (!code) return res.status(400).send("No code received");
+  // forward to the token-exchange endpoint you already have
+  res.redirect("/auth/fb/token?code=" + encodeURIComponent(code));
 });
+
 
 /* ---- FB login (redirect to Facebook) ---- */
 app.get("/auth/fb/login", (req, res) => {
