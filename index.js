@@ -18,8 +18,11 @@ app.get("/", (_req,res)=>res.send("OK v7"));
 
 /* ---- webhook verify/receive ---- */
 app.get("/webhook", (req, res) => {
-  res.send(req.query["hub.challenge"] || "OK");
+  const {["hub.mode"]: mode, ["hub.verify_token"]: token, ["hub.challenge"]: challenge} = req.query;
+  if (mode === "subscribe" && token === process.env.WH_VERIFY) return res.status(200).send(challenge);
+  res.sendStatus(403);
 });
+
 app.post("/webhook", express.json(), (req, res) => {
   console.log("Webhook event:", req.body);
   res.sendStatus(200);
