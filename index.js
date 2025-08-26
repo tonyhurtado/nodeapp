@@ -14,15 +14,36 @@ console.log("BASE_URL:", process.env.BASE_URL);
 app.get("/", (_req, res) => {
   res.type("html").send(`<!doctype html>
 <html><head><meta charset="utf-8"><title>WA Onboarding</title>
+
 <style>
   body{font-family:system-ui;margin:32px}
   .row{margin:10px 0}
   input{padding:8px;width:360px}
   button,a.btn{padding:10px 14px;margin-left:6px;cursor:pointer}
   pre{background:#f6f6f6;padding:12px;border:1px solid #ddd;max-width:820px;overflow:auto}
+
+  /* NEW: steps UI */
+  .steps{display:grid;gap:8px;margin:16px 0;max-width:820px}
+  .step{display:flex;align-items:flex-start;gap:10px;padding:10px;border:1px solid #ddd;border-radius:10px}
+  .step .num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid #ccc;font-weight:600}
+  .step.wait{background:#f8fafc;border-color:#e2e8f0}
+  .step.action{background:#fffaf0;border-color:#dd6b20}
+  .step.done{background:#f0fff4;border-color:#38a169}
+  .step.done .num{background:#38a169;color:#fff;border-color:#38a169}
+  .step small{color:#555}
+  .step b{display:block}
 </style>
+
 </head><body>
   <h1>WhatsApp Onboarding</h1>
+
+<div class="steps" id="steps">
+  <div id="s1" class="step wait"><div class="num">1</div><div><b>Connect</b><small>Sign in to get a token.</small></div></div>
+  <div id="s2" class="step wait"><div class="num">2</div><div><b>Business</b><small>Create/verify your Business.</small></div></div>
+  <div id="s3" class="step wait"><div class="num">3</div><div><b>WABA & Phone</b><small>Add a WhatsApp account and phone.</small></div></div>
+  <div id="s4" class="step wait"><div class="num">4</div><div><b>Webhooks</b><small>Subscribe WABA to this app.</small></div></div>
+  <div id="s5" class="step wait"><div class="num">5</div><div><b>Test</b><small>Send a test message.</small></div></div>
+</div>
 
   <div class="row">
     <a class="btn" href="/auth/fb/login">Connect with Facebook</a>
@@ -52,21 +73,93 @@ app.get("/", (_req, res) => {
 <script>
 const out = (x) => document.getElementById('out').textContent = typeof x==='string'?x:JSON.stringify(x,null,2);
 
+/* ---------- STEP WIZARD HELPERS ---------- */
+function mark(id, state, msg){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('wait','action','done');
+  el.classList.add(state); // 'wait' | 'action' | 'done'
+  if (msg) {
+    const sm = el.querySelector('small');
+    if (sm) sm.textContent = msg;
+  }
+}
+
+// called once token exists
+function updateAfterToken(){
+  mark('s1','done','Connected. Token received.');
+  mark('s2','wait','Checking your Business…');
+}
+
+function reflectVerify(j){
+  if (!j) return;
+  // No business yet
+  if (j.status === 'no_business' || j.step === 'create_business') {
+    mark('s2','action','No Business found. Create it in Meta, then click Verify again.');
+    mark('s3','wait','Waiting for Business…');
+    return;
+  }
+  // Needs verification
+  if ((j.verification_status && j.verification_status !== 'verified') || j.step === 'verify_business') {
+    const status = j.verification_status || 'unknown';
+    mark('s2','action',`Business verification: ${status}. Complete it, then Verify again.`);
+    mark('s3','wait','Waiting for verification…');
+    return;
+  }
+  // Verified
+  mark('s2','done','Business verified.');
+  mark('s3','wait','Looking for WABA & phone…');
+}
+
+function reflectOnboard(j){
+  if (!j) return;
+  // If onboarding tells us to verify first, reuse verify reflection
+  if (j.step === 'verify_business') { reflectVerify(j); return; }
+  // Needs WABA/phone
+  if (j.step === 'create_waba') {
+    mark('s3','action','No WhatsApp account/phone. Add a phone in WhatsApp Manager, then click Onboard again.');
+    return;
+  }
+  // Got WABA (and maybe phone)
+  if (j.waba_id) {
+    mark('s3','done', j.display_phone_number
+      ? `Phone: ${j.display_phone_number}`
+      : 'WABA found. Add a phone for inbound.');
+    mark('s4','done','Webhooks subscribed.');
+    mark('s5','action','Enter wa_id below and send a test.');
+  }
+}
+
+
 async function verify(){
   const token = document.getElementById('token').value.trim();
   if(!token) return out("Missing token");
+
   const r = await fetch('/verify-status?token='+encodeURIComponent(token));
-  out(await r.json());
+  const j = await r.json();
+
+  out(j);              // still show JSON in <pre>
+  reflectVerify(j);    // update step cards
 }
+
 
 async function onboard(){
   const token = document.getElementById('token').value.trim();
   if(!token) return out("Missing token");
+
   const r = await fetch('/onboard?token='+encodeURIComponent(token));
   const j = await r.json();
+
   out(j);
-  if(j.phone_number_id) document.getElementById('phoneId').value = j.phone_number_id;
+
+  if(j.phone_number_id){
+    document.getElementById('phoneId').value = j.phone_number_id;
+  }
+
+  // NEW: update step cards
+  reflectOnboard(j);
 }
+
 
 async function sendText(){
   const token = document.getElementById('token').value.trim();
@@ -89,10 +182,15 @@ function autofill(){
     document.getElementById('token').value = t;
     // clean the URL (no query string)
     history.replaceState(null, '', location.pathname);
+
+    // NEW: mark Step 1 as done and Step 2 as pending
+    updateAfterToken();
+
     // auto-run verify
     verify();
   }
 }
+
 window.addEventListener('DOMContentLoaded', autofill);
 </script>
 
