@@ -102,7 +102,7 @@ function reflectVerify(j){
   // Needs verification
   if ((j.verification_status && j.verification_status !== 'verified') || j.step === 'verify_business') {
     const status = j.verification_status || 'unknown';
-    mark('s2','action',`Business verification: ${status}. Complete it, then Verify again.`);
+    mark('s2','action', 'Business verification: ' + status + '. Complete it, then Verify again.');
     mark('s3','wait','Waiting for verification…');
     return;
   }
@@ -123,13 +123,12 @@ function reflectOnboard(j){
   // Got WABA (and maybe phone)
   if (j.waba_id) {
     mark('s3','done', j.display_phone_number
-      ? `Phone: ${j.display_phone_number}`
+      ? ('Phone: ' + j.display_phone_number)
       : 'WABA found. Add a phone for inbound.');
     mark('s4','done','Webhooks subscribed.');
     mark('s5','action','Enter wa_id below and send a test.');
   }
 }
-
 
 async function verify(){
   const token = document.getElementById('token').value.trim();
@@ -138,10 +137,9 @@ async function verify(){
   const r = await fetch('/verify-status?token='+encodeURIComponent(token));
   const j = await r.json();
 
-  out(j);              // still show JSON in <pre>
-  reflectVerify(j);    // update step cards
+  out(j);
+  reflectVerify(j);
 }
-
 
 async function onboard(){
   const token = document.getElementById('token').value.trim();
@@ -156,10 +154,8 @@ async function onboard(){
     document.getElementById('phoneId').value = j.phone_number_id;
   }
 
-  // NEW: update step cards
   reflectOnboard(j);
 }
-
 
 async function sendText(){
   const token = document.getElementById('token').value.trim();
@@ -183,7 +179,7 @@ function autofill(){
     // clean the URL (no query string)
     history.replaceState(null, '', location.pathname);
 
-    // NEW: mark Step 1 as done and Step 2 as pending
+    // mark Step 1 as done and Step 2 as pending
     updateAfterToken();
 
     // auto-run verify
@@ -196,6 +192,7 @@ window.addEventListener('DOMContentLoaded', autofill);
 
 </body></html>`);
 });
+
 
 /* ---------- simple logger ---------- */
 app.use((req, _res, next) => {
