@@ -317,3 +317,8 @@ app.post("/send-text", async (req, res) => {
 /* ---------- start server ---------- */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => console.log("Listening on " + PORT));
+
+app.get("/privacy", (_req,res)=>res.type("html").send("<h1>Privacy Policy</h1><p>We only use your Facebook/WhatsApp data to connect your WABA and send/receive messages at your request. Contact: support@yourdomain.com</p>"));
+
+app.get("/data-deletion", (_req,res)=>res.type("html").send("<h1>Data Deletion</h1><p>To delete your data, email support@yourdomain.com from the account used. We will remove stored tokens/IDs within 48 hours.</p>"));
+
