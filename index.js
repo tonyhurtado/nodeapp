@@ -33,7 +33,6 @@ app.get("/", (_req, res) => {
   .step.done .num{background:#38a169;color:#fff;border-color:#38a169}
   .content{display:grid;gap:8px;margin-left:38px}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .actions { margin-top: 6px; }
 </style>
 
 </head><body>
@@ -119,37 +118,18 @@ function updateAfterToken(){ mark('s1','done','Connected. Token received.'); mar
 
 function reflectVerify(j){
   if (!j) return;
-
-  // No business yet
   if (j.status === 'no_business' || j.step === 'create_business') {
-    mark('s2','action','No Business found. Create it, then Verify again.');
-    setStepAction('s2',
-      '<button onclick="window.open(\'' + (j.next_url || 'https://business.facebook.com/overview') + '\',\'_blank\',\'noopener\')">Create Business in Meta</button>' +
-      '<button onclick="verify()">Verify Again</button>'
-    );
-    mark('s3','wait','Waiting for Business…');
-    return;
+    mark('s2','action','No Business found. Create it in Meta, then Verify again.');
+    mark('s3','wait','Waiting for Business…'); return;
   }
-
-  // Needs verification
   if ((j.verification_status && j.verification_status !== 'verified') || j.step === 'verify_business') {
-    const url = j.next_url || '';
     const status = j.verification_status || 'unknown';
     mark('s2','action','Business verification: ' + status + '. Complete it, then Verify again.');
-    setStepAction('s2',
-      '<button onclick="window.open(\'' + url + '\',\'_blank\',\'noopener\')">Open Verification</button>' +
-      '<button onclick="verify()">Verify Again</button>'
-    );
-    mark('s3','wait','Waiting for verification…');
-    return;
+    mark('s3','wait','Waiting for verification…'); return;
   }
-
-  // Verified
   mark('s2','done','Business verified.');
-  setStepAction('s2',''); // clear extra buttons
   mark('s3','wait','Looking for WABA & phone…');
 }
-
 
 function reflectOnboard(j){
   if (!j) return;
@@ -163,20 +143,6 @@ function reflectOnboard(j){
     mark('s4','done','Webhooks subscribed.');
     mark('s5','action','Enter wa_id below and send a test.');
   }
-}
-
-/* add/replace action buttons inside a step without removing existing fields */
-function setStepAction(stepId, html){
-  const step = document.getElementById(stepId);
-  if (!step) return;
-  const content = step.querySelector('.content');
-  let box = step.querySelector('.actions');
-  if (!box) {
-    box = document.createElement('div');
-    box.className = 'row actions';
-    content.appendChild(box);
-  }
-  box.innerHTML = html;
 }
 
 /* ACTIONS */
@@ -449,4 +415,3 @@ app.listen(PORT, "0.0.0.0", () => console.log("Listening on " + PORT));
 app.get("/privacy", (_req,res)=>res.type("html").send("<h1>Privacy Policy</h1><p>We only use your Facebook/WhatsApp data to connect your WABA and send/receive messages at your request. Contact: support@yourdomain.com</p>"));
 
 app.get("/data-deletion", (_req,res)=>res.type("html").send("<h1>Data Deletion</h1><p>To delete your data, email support@yourdomain.com from the account used. We will remove stored tokens/IDs within 48 hours.</p>"));
-
