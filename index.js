@@ -118,18 +118,49 @@ function updateAfterToken(){ mark('s1','done','Connected. Token received.'); mar
 
 function reflectVerify(j){
   if (!j) return;
+
+  // No business yet
   if (j.status === 'no_business' || j.step === 'create_business') {
-    mark('s2','action','No Business found. Create it in Meta, then Verify again.');
-    mark('s3','wait','Waiting for Business…'); return;
+    mark('s2','action','No Business found. Create it, then Verify again.');
+
+    // Add a button that opens the Meta creation page
+    const step = document.getElementById('s2').querySelector('.content');
+    step.innerHTML = `
+      <div class="row">
+        <button onclick="window.open('${j.next_url || 'https://business.facebook.com/overview'}','_blank','noopener')">
+          Create Business in Meta
+        </button>
+        <button onclick="verify()">Verify Again</button>
+      </div>
+    `;
+
+    mark('s3','wait','Waiting for Business…');
+    return;
   }
+
+  // Needs verification
   if ((j.verification_status && j.verification_status !== 'verified') || j.step === 'verify_business') {
     const status = j.verification_status || 'unknown';
     mark('s2','action','Business verification: ' + status + '. Complete it, then Verify again.');
-    mark('s3','wait','Waiting for verification…'); return;
+
+    const step = document.getElementById('s2').querySelector('.content');
+    step.innerHTML = `
+      <div class="row">
+        <button onclick="window.open('${j.next_url || ''}','_blank','noopener')">Open Verification</button>
+        <button onclick="verify()">Verify Again</button>
+      </div>
+    `;
+
+    mark('s3','wait','Waiting for verification…');
+    return;
   }
+
+  // Verified
   mark('s2','done','Business verified.');
+  // keep default input + button here (no need to override content)
   mark('s3','wait','Looking for WABA & phone…');
 }
+
 
 function reflectOnboard(j){
   if (!j) return;
