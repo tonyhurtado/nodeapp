@@ -81,7 +81,21 @@ async function sendText(){
   });
   out(await r.json());
 }
+
+/* ---------- NEW: autofill token from ?token=... and auto-verify ---------- */
+function autofill(){
+  const t = new URLSearchParams(location.search).get('token');
+  if (t) {
+    document.getElementById('token').value = t;
+    // clean the URL (no query string)
+    history.replaceState(null, '', location.pathname);
+    // auto-run verify
+    verify();
+  }
+}
+window.addEventListener('DOMContentLoaded', autofill);
 </script>
+
 </body></html>`);
 });
 
@@ -127,6 +141,8 @@ app.get("/auth/fb/callback", (req, res) => {
 app.get("/auth/fb/token", async (req, res) => {
   try {
     const { code } = req.query;
+
+    // short-lived
     const r1 = await axios.get("https://graph.facebook.com/v21.0/oauth/access_token", {
       params: {
         client_id: process.env.FB_APP_ID,
@@ -135,6 +151,8 @@ app.get("/auth/fb/token", async (req, res) => {
         code,
       },
     });
+
+    // long-lived
     const r2 = await axios.get("https://graph.facebook.com/v21.0/oauth/access_token", {
       params: {
         grant_type: "fb_exchange_token",
@@ -143,12 +161,15 @@ app.get("/auth/fb/token", async (req, res) => {
         fb_exchange_token: r1.data.access_token,
       },
     });
-    res.json(r2.data); // { access_token, token_type, expires_in }
+
+    // ✅ redirect back to home with token
+    res.redirect(`/?token=${encodeURIComponent(r2.data.access_token)}`);
   } catch (e) {
     console.error("TOKEN ERROR:", e.response?.data || e.message);
     res.status(500).send("Error exchanging token");
   }
 });
+
 
 /* ---------- Graph helpers ---------- */
 async function gfetch(path, token) {
