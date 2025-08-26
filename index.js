@@ -17,55 +17,86 @@ app.get("/", (_req, res) => {
 
 <style>
   body{font-family:system-ui;margin:32px}
-  .row{margin:10px 0}
   input{padding:8px;width:360px}
   button,a.btn{padding:10px 14px;margin-left:6px;cursor:pointer}
-  pre{background:#f6f6f6;padding:12px;border:1px solid #ddd;max-width:820px;overflow:auto}
+  small{color:#555}
+  pre{background:#f6f6f6;padding:12px;border:1px solid #ddd;max-width:900px;overflow:auto;margin-top:14px}
 
-  /* NEW: steps UI */
-  .steps{display:grid;gap:8px;margin:16px 0;max-width:820px}
-  .step{display:flex;align-items:flex-start;gap:10px;padding:10px;border:1px solid #ddd;border-radius:10px}
+  /* steps UI */
+  .steps{display:grid;gap:10px;margin:16px 0;max-width:900px}
+  .step{padding:12px;border:1px solid #ddd;border-radius:10px;background:#f8fafc}
+  .step .hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px}
   .step .num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid #ccc;font-weight:600}
   .step.wait{background:#f8fafc;border-color:#e2e8f0}
   .step.action{background:#fffaf0;border-color:#dd6b20}
   .step.done{background:#f0fff4;border-color:#38a169}
   .step.done .num{background:#38a169;color:#fff;border-color:#38a169}
-  .step small{color:#555}
-  .step b{display:block}
+  .content{display:grid;gap:8px;margin-left:38px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 </style>
 
 </head><body>
   <h1>WhatsApp Onboarding</h1>
 
-<div class="steps" id="steps">
-  <div id="s1" class="step wait"><div class="num">1</div><div><b>Connect</b><small>Sign in to get a token.</small></div></div>
-  <div id="s2" class="step wait"><div class="num">2</div><div><b>Business</b><small>Create/verify your Business.</small></div></div>
-  <div id="s3" class="step wait"><div class="num">3</div><div><b>WABA & Phone</b><small>Add a WhatsApp account and phone.</small></div></div>
-  <div id="s4" class="step wait"><div class="num">4</div><div><b>Webhooks</b><small>Subscribe WABA to this app.</small></div></div>
-  <div id="s5" class="step wait"><div class="num">5</div><div><b>Test</b><small>Send a test message.</small></div></div>
-</div>
+  <div class="steps" id="steps">
 
-  <div class="row">
-    <a class="btn" href="/auth/fb/login">Connect with Facebook</a>
-    <small>→ runs OAuth and returns access token JSON</small>
-  </div>
+    <!-- STEP 1 -->
+    <div id="s1" class="step wait">
+      <div class="hdr"><div class="num">1</div><div><b>Connect</b><br><small>Sign in to get a token.</small></div></div>
+      <div class="content">
+        <div class="row">
+          <a class="btn" href="/auth/fb/login">Connect with Facebook</a>
+          <small>→ runs OAuth and returns token</small>
+        </div>
+      </div>
+    </div>
 
-  <div class="row">
-    <input id="token" placeholder="Paste access token here" />
-    <button onclick="verify()">Verify Business</button>
-    <button onclick="onboard()">Onboard</button>
-  </div>
+    <!-- STEP 2 -->
+    <div id="s2" class="step wait">
+      <div class="hdr"><div class="num">2</div><div><b>Business</b><br><small>Create/verify your Business.</small></div></div>
+      <div class="content">
+        <div class="row">
+          <input id="token" placeholder="Access token (auto-filled after login)" />
+          <button onclick="verify()">Verify Business</button>
+          <span id="busy" style="display:none">⏳</span>
+        </div>
+      </div>
+    </div>
 
-  <h3>Send test WhatsApp message</h3>
-  <div class="row">
-    <input id="phoneId" placeholder="Phone Number ID (auto-filled after Onboard)" />
-  </div>
-  <div class="row">
-    <input id="to" placeholder="Customer wa_id (e.g. 1XXXXXXXXXX)" />
-  </div>
-  <div class="row">
-    <input id="text" placeholder="Message text" />
-    <button onclick="sendText()">Send</button>
+    <!-- STEP 3 -->
+    <div id="s3" class="step wait">
+      <div class="hdr"><div class="num">3</div><div><b>WABA & Phone</b><br><small>Add a WhatsApp account and phone.</small></div></div>
+      <div class="content">
+        <div class="row">
+          <button onclick="onboard()">Onboard</button>
+          <input id="phoneId" placeholder="Phone Number ID (auto-filled after Onboard)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div id="s4" class="step wait">
+      <div class="hdr"><div class="num">4</div><div><b>Webhooks</b><br><small>Subscribe WABA to this app.</small></div></div>
+      <div class="content">
+        <div class="row">
+          <small>Callback URL must be set in Meta → WhatsApp → Configuration:<br>
+          <code>https://YOUR_HOST/webhook</code> with your verify token.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div id="s5" class="step wait">
+      <div class="hdr"><div class="num">5</div><div><b>Send a Test</b><br><small>Use your Phone Number ID and the recipient wa_id.</small></div></div>
+      <div class="content">
+        <div class="row">
+          <input id="to" placeholder="Customer wa_id (e.g. 1XXXXXXXXXX)" />
+          <input id="text" placeholder="Message text" />
+          <button onclick="sendText()">Send</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <pre id="out"></pre>
@@ -73,87 +104,64 @@ app.get("/", (_req, res) => {
 <script>
 const out = (x) => document.getElementById('out').textContent = typeof x==='string'?x:JSON.stringify(x,null,2);
 
-/* ---------- STEP WIZARD HELPERS ---------- */
+/* STEP WIZARD HELPERS */
 function mark(id, state, msg){
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('wait','action','done');
-  el.classList.add(state); // 'wait' | 'action' | 'done'
+  el.classList.add(state);
   if (msg) {
-    const sm = el.querySelector('small');
-    if (sm) sm.textContent = msg;
+    const sm = el.querySelector('small'); if (sm) sm.textContent = msg;
   }
 }
-
-// called once token exists
-function updateAfterToken(){
-  mark('s1','done','Connected. Token received.');
-  mark('s2','wait','Checking your Business…');
-}
+function updateAfterToken(){ mark('s1','done','Connected. Token received.'); mark('s2','wait','Checking your Business…'); }
 
 function reflectVerify(j){
   if (!j) return;
-  // No business yet
   if (j.status === 'no_business' || j.step === 'create_business') {
-    mark('s2','action','No Business found. Create it in Meta, then click Verify again.');
-    mark('s3','wait','Waiting for Business…');
-    return;
+    mark('s2','action','No Business found. Create it in Meta, then Verify again.');
+    mark('s3','wait','Waiting for Business…'); return;
   }
-  // Needs verification
   if ((j.verification_status && j.verification_status !== 'verified') || j.step === 'verify_business') {
     const status = j.verification_status || 'unknown';
-    mark('s2','action', 'Business verification: ' + status + '. Complete it, then Verify again.');
-    mark('s3','wait','Waiting for verification…');
-    return;
+    mark('s2','action','Business verification: ' + status + '. Complete it, then Verify again.');
+    mark('s3','wait','Waiting for verification…'); return;
   }
-  // Verified
   mark('s2','done','Business verified.');
   mark('s3','wait','Looking for WABA & phone…');
 }
 
 function reflectOnboard(j){
   if (!j) return;
-  // If onboarding tells us to verify first, reuse verify reflection
   if (j.step === 'verify_business') { reflectVerify(j); return; }
-  // Needs WABA/phone
   if (j.step === 'create_waba') {
-    mark('s3','action','No WhatsApp account/phone. Add a phone in WhatsApp Manager, then click Onboard again.');
+    mark('s3','action','No WhatsApp account/phone. Add a phone in WhatsApp Manager, then Onboard again.');
     return;
   }
-  // Got WABA (and maybe phone)
   if (j.waba_id) {
-    mark('s3','done', j.display_phone_number
-      ? ('Phone: ' + j.display_phone_number)
-      : 'WABA found. Add a phone for inbound.');
+    mark('s3','done', j.display_phone_number ? ('Phone: ' + j.display_phone_number) : 'WABA found. Add a phone for inbound.');
     mark('s4','done','Webhooks subscribed.');
     mark('s5','action','Enter wa_id below and send a test.');
   }
 }
 
+/* ACTIONS */
 async function verify(){
   const token = document.getElementById('token').value.trim();
-  if(!token) return out("Missing token");
-
-  const r = await fetch('/verify-status?token='+encodeURIComponent(token));
-  const j = await r.json();
-
-  out(j);
-  reflectVerify(j);
+  if(!token) return out('Missing token');
+  document.getElementById('busy').style.display = 'inline';
+  try{
+    const r = await fetch('/verify-status?token='+encodeURIComponent(token));
+    const j = await r.json(); out(j); reflectVerify(j);
+  } finally { document.getElementById('busy').style.display = 'none'; }
 }
 
 async function onboard(){
   const token = document.getElementById('token').value.trim();
-  if(!token) return out("Missing token");
-
+  if(!token) return out('Missing token');
   const r = await fetch('/onboard?token='+encodeURIComponent(token));
-  const j = await r.json();
-
-  out(j);
-
-  if(j.phone_number_id){
-    document.getElementById('phoneId').value = j.phone_number_id;
-  }
-
+  const j = await r.json(); out(j);
+  if(j.phone_number_id) document.getElementById('phoneId').value = j.phone_number_id;
   reflectOnboard(j);
 }
 
@@ -162,36 +170,27 @@ async function sendText(){
   const phoneId = document.getElementById('phoneId').value.trim();
   const to = document.getElementById('to').value.trim();
   const text = document.getElementById('text').value.trim();
-  if(!token || !phoneId || !to || !text) return out("Missing token/phoneId/to/text");
-  const r = await fetch('/send-text', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ token, phone_number_id: phoneId, to, body: text })
-  });
+  if(!token || !phoneId || !to || !text) return out('Missing token/phoneId/to/text');
+  const r = await fetch('/send-text', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token, phone_number_id: phoneId, to, body: text }) });
   out(await r.json());
 }
 
-/* ---------- NEW: autofill token from ?token=... and auto-verify ---------- */
+/* Auto-fill token from ?token=... and auto-verify */
 function autofill(){
   const t = new URLSearchParams(location.search).get('token');
   if (t) {
     document.getElementById('token').value = t;
-    // clean the URL (no query string)
     history.replaceState(null, '', location.pathname);
-
-    // mark Step 1 as done and Step 2 as pending
     updateAfterToken();
-
-    // auto-run verify
     verify();
   }
 }
-
 window.addEventListener('DOMContentLoaded', autofill);
 </script>
 
 </body></html>`);
 });
+
 
 
 /* ---------- simple logger ---------- */
